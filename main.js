@@ -1,9 +1,6 @@
+// Theme toggle logic
 const themeToggleBtn = document.getElementById('theme-toggle');
-const taskInput = document.getElementById('task-input');
-const addBtn = document.getElementById('add-btn');
-const taskList = document.getElementById('task-list');
 
-// --- Theme toggle logic ---
 function setTheme(isDark) {
     if (isDark) {
         document.body.classList.add('dark-mode');
@@ -31,74 +28,194 @@ themeToggleBtn.addEventListener('click', () => {
     setTheme(isDark);
 });
 
-// --- Study Planner logic ---
-let tasks = JSON.parse(localStorage.getItem('study_tasks')) || [];
+// Planner Data Management
+const DATA_KEY = 'planner_data_v2';
 
-function saveTasks() {
-    localStorage.setItem('study_tasks', JSON.stringify(tasks));
+let plannerData = JSON.parse(localStorage.getItem(DATA_KEY)) || {
+    month: '',
+    day: '',
+    dDay: '',
+    plannedH: '',
+    plannedM: '',
+    actualH: '',
+    actualM: '',
+    tasks: [
+        { id: 1, text: '', completed: false },
+        { id: 2, text: '', completed: false },
+        { id: 3, text: '', completed: false },
+        { id: 4, text: '', completed: false },
+        { id: 5, text: '', completed: false }
+    ],
+    timeGrid: {}, // format: "hour-index": true/false
+    review: ''
+};
+
+function saveData() {
+    localStorage.setItem(DATA_KEY, JSON.stringify(plannerData));
 }
 
+// Bind header inputs
+const bindInput = (id, key) => {
+    const el = document.getElementById(id);
+    if(el) {
+        el.value = plannerData[key];
+        el.addEventListener('input', (e) => {
+            plannerData[key] = e.target.value;
+            saveData();
+        });
+    }
+};
+
+bindInput('month-input', 'month');
+bindInput('day-input', 'day');
+bindInput('d-day-input', 'dDay');
+bindInput('planned-h', 'plannedH');
+bindInput('planned-m', 'plannedM');
+bindInput('actual-h', 'actualH');
+bindInput('actual-m', 'actualM');
+bindInput('review-input', 'review');
+
+// Task List Management
+const taskListEl = document.getElementById('task-list');
+const addTaskBtn = document.getElementById('add-task-btn');
+
 function renderTasks() {
-    taskList.innerHTML = '';
-    tasks.forEach((task, index) => {
-        const li = document.createElement('li');
-        li.className = `task-item ${task.completed ? 'completed' : ''}`;
-        
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'task-content';
+    taskListEl.innerHTML = '';
+    plannerData.tasks.forEach((task, index) => {
+        const row = document.createElement('div');
+        row.className = `task-row ${task.completed ? 'completed' : ''}`;
         
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
+        checkbox.className = 'task-checkbox';
         checkbox.checked = task.completed;
-        checkbox.addEventListener('change', () => toggleTask(index));
-        
-        const span = document.createElement('span');
-        span.className = 'task-text';
-        span.textContent = task.text;
-        
-        contentDiv.appendChild(checkbox);
-        contentDiv.appendChild(span);
-        
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'delete-btn';
-        deleteBtn.textContent = '삭제';
-        deleteBtn.addEventListener('click', () => deleteTask(index));
-        
-        li.appendChild(contentDiv);
-        li.appendChild(deleteBtn);
-        
-        taskList.appendChild(li);
+        checkbox.addEventListener('change', (e) => {
+            plannerData.tasks[index].completed = e.target.checked;
+            saveData();
+            renderTasks(); // re-render to apply line-through
+        });
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'task-input';
+        input.value = task.text;
+        input.placeholder = '할 일을 입력하세요';
+        input.addEventListener('input', (e) => {
+            plannerData.tasks[index].text = e.target.value;
+            saveData();
+        });
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-task-btn';
+        delBtn.innerHTML = '×';
+        delBtn.addEventListener('click', () => {
+            plannerData.tasks.splice(index, 1);
+            saveData();
+            renderTasks();
+        });
+
+        row.appendChild(checkbox);
+        row.appendChild(input);
+        row.appendChild(delBtn);
+        taskListEl.appendChild(row);
     });
 }
 
-function addTask() {
-    const text = taskInput.value.trim();
-    if (text) {
-        tasks.push({ text: text, completed: false });
-        taskInput.value = '';
-        saveTasks();
-        renderTasks();
-    }
-}
-
-function toggleTask(index) {
-    tasks[index].completed = !tasks[index].completed;
-    saveTasks();
+addTaskBtn.addEventListener('click', () => {
+    plannerData.tasks.push({ id: Date.now(), text: '', completed: false });
+    saveData();
     renderTasks();
-}
-
-function deleteTask(index) {
-    tasks.splice(index, 1);
-    saveTasks();
-    renderTasks();
-}
-
-addBtn.addEventListener('click', addTask);
-taskInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        addTask();
-    }
 });
 
-// Initial render
+// Time Grid Management
+const timeGridBody = document.getElementById('time-grid-body');
+const hours = Array.from({length: 24}, (_, i) => (i + 5) % 24); // 05 to 04
+
+let isDragging = false;
+let dragValue = true; // true if turning on, false if turning off
+
+function renderTimeGrid() {
+    timeGridBody.innerHTML = '';
+    
+    // Prevent default drag behavior to allow custom drag selection
+    timeGridBody.addEventListener('dragstart', (e) => e.preventDefault());
+
+    hours.forEach((hour) => {
+        const row = document.createElement('div');
+        row.className = 'time-grid-row';
+
+        const hourCell = document.createElement('div');
+        hourCell.className = 'time-hour';
+        hourCell.textContent = hour.toString().padStart(2, '0');
+        row.appendChild(hourCell);
+
+        for (let min = 0; min < 6; min++) {
+            const cell = document.createElement('div');
+            cell.className = 'time-cell';
+            const cellKey = `${hour}-${min}`;
+            
+            if (plannerData.timeGrid[cellKey]) {
+                cell.classList.add('active');
+            }
+
+            // Mouse events for drag to paint
+            cell.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                dragValue = !plannerData.timeGrid[cellKey];
+                plannerData.timeGrid[cellKey] = dragValue;
+                cell.classList.toggle('active', dragValue);
+                saveData();
+            });
+
+            cell.addEventListener('mouseenter', (e) => {
+                if (isDragging) {
+                    plannerData.timeGrid[cellKey] = dragValue;
+                    cell.classList.toggle('active', dragValue);
+                    saveData();
+                }
+            });
+
+            // Touch events for mobile
+            cell.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                dragValue = !plannerData.timeGrid[cellKey];
+                plannerData.timeGrid[cellKey] = dragValue;
+                cell.classList.toggle('active', dragValue);
+                saveData();
+            }, {passive: true});
+
+            row.appendChild(cell);
+        }
+        timeGridBody.appendChild(row);
+    });
+}
+
+document.addEventListener('mouseup', () => { isDragging = false; });
+document.addEventListener('touchend', () => { isDragging = false; });
+
+// Handle touch dragging across cells
+timeGridBody.addEventListener('touchmove', (e) => {
+    if (!isDragging) return;
+    const touch = e.touches[0];
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (target && target.classList.contains('time-cell')) {
+        const row = target.parentElement;
+        const rowIndex = Array.from(timeGridBody.children).indexOf(row);
+        const cellIndex = Array.from(row.children).indexOf(target) - 1; // -1 for hour cell
+        
+        if (rowIndex >= 0 && cellIndex >= 0) {
+            const hour = hours[rowIndex];
+            const cellKey = `${hour}-${cellIndex}`;
+            if (plannerData.timeGrid[cellKey] !== dragValue) {
+                plannerData.timeGrid[cellKey] = dragValue;
+                target.classList.toggle('active', dragValue);
+                saveData();
+            }
+        }
+    }
+}, {passive: true});
+
+
+// Initial Render
 renderTasks();
+renderTimeGrid();
