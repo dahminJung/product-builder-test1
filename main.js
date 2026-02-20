@@ -154,35 +154,34 @@ function renderTimeGrid() {
             cell.className = 'time-cell';
             const cellKey = `${hour}-${min}`;
             
+            // Set cell data attribute to easily identify it during touchmove
+            cell.dataset.key = cellKey;
+
             if (plannerData.timeGrid[cellKey]) {
                 cell.classList.add('active');
             }
 
-            // Mouse events for drag to paint
+            // Mouse events for drag to paint (Desktop)
             cell.addEventListener('mousedown', (e) => {
                 isDragging = true;
                 dragValue = !plannerData.timeGrid[cellKey];
-                plannerData.timeGrid[cellKey] = dragValue;
-                cell.classList.toggle('active', dragValue);
-                saveData();
+                updateCell(cell, cellKey, dragValue);
             });
 
             cell.addEventListener('mouseenter', (e) => {
                 if (isDragging) {
-                    plannerData.timeGrid[cellKey] = dragValue;
-                    cell.classList.toggle('active', dragValue);
-                    saveData();
+                    updateCell(cell, cellKey, dragValue);
                 }
             });
 
-            // Touch events for mobile
+            // Touch events (Mobile)
             cell.addEventListener('touchstart', (e) => {
+                // Prevent scrolling while painting
+                if (e.cancelable) e.preventDefault();
                 isDragging = true;
                 dragValue = !plannerData.timeGrid[cellKey];
-                plannerData.timeGrid[cellKey] = dragValue;
-                cell.classList.toggle('active', dragValue);
-                saveData();
-            }, {passive: true});
+                updateCell(cell, cellKey, dragValue);
+            }, { passive: false });
 
             row.appendChild(cell);
         }
@@ -190,30 +189,33 @@ function renderTimeGrid() {
     });
 }
 
-document.addEventListener('mouseup', () => { isDragging = false; });
-document.addEventListener('touchend', () => { isDragging = false; });
+function updateCell(cell, cellKey, value) {
+    if (plannerData.timeGrid[cellKey] !== value) {
+        plannerData.timeGrid[cellKey] = value;
+        cell.classList.toggle('active', value);
+        saveData();
+    }
+}
 
-// Handle touch dragging across cells
+// Handle touch dragging across cells (Mobile smooth drag)
 timeGridBody.addEventListener('touchmove', (e) => {
     if (!isDragging) return;
+    if (e.cancelable) e.preventDefault(); // Prevent scrolling while dragging
+    
     const touch = e.touches[0];
     const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    
     if (target && target.classList.contains('time-cell')) {
-        const row = target.parentElement;
-        const rowIndex = Array.from(timeGridBody.children).indexOf(row);
-        const cellIndex = Array.from(row.children).indexOf(target) - 1; // -1 for hour cell
-        
-        if (rowIndex >= 0 && cellIndex >= 0) {
-            const hour = hours[rowIndex];
-            const cellKey = `${hour}-${cellIndex}`;
-            if (plannerData.timeGrid[cellKey] !== dragValue) {
-                plannerData.timeGrid[cellKey] = dragValue;
-                target.classList.toggle('active', dragValue);
-                saveData();
-            }
+        const cellKey = target.dataset.key;
+        if (cellKey) {
+            updateCell(target, cellKey, dragValue);
         }
     }
-}, {passive: true});
+}, { passive: false });
+
+document.addEventListener('mouseup', () => { isDragging = false; });
+document.addEventListener('touchend', () => { isDragging = false; });
+document.addEventListener('touchcancel', () => { isDragging = false; });
 
 
 // Initial Render
