@@ -157,3 +157,54 @@ button {
 button:hover {
   opacity: 0.9;
 }
+
+hr {
+  border: 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode hr {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+.contact-form {
+  margin-top: 2rem;
+  text-align: left;
+}
+
+.contact-form h2 {
+  font-size: 1.4rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.contact-form input,
+.contact-form textarea {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 0.4rem;
+  background-color: var(--container-bg);
+  color: var(--text);
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.contact-form textarea {
+  height: 100px;
+  resize: vertical;
+}
+
+.submit-btn {
+  width: 100%;
+  background-color: #333 !important;
+  margin-top: 0.5rem;
+}
+
+body.dark-mode .submit-btn {
+  background-color: #555 !important;
+}
