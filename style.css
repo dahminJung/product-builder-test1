@@ -2,6 +2,13 @@
   --primary: #4a90e2;
   --bg: #f5f7fa;
   --text: #333;
+  --container-bg: white;
+}
+
+body.dark-mode {
+  --bg: #121212;
+  --text: #e0e0e0;
+  --container-bg: #2d2d2d;
 }
 
 body {
@@ -16,13 +23,90 @@ body {
 }
 
 .container {
-  background: white;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  background: var(--container-bg);
   padding: 3rem;
   border-radius: 1rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   text-align: center;
   width: 90%;
   max-width: 500px;
+  position: relative;
+}
+
+.theme-toggle {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--text);
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  background: var(--text);
+  color: var(--container-bg);
 }
 
 h1 {
