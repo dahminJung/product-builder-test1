@@ -1,8 +1,9 @@
-const display = document.getElementById('number-display');
-const btn = document.getElementById('generate-btn');
 const themeToggleBtn = document.getElementById('theme-toggle');
+const taskInput = document.getElementById('task-input');
+const addBtn = document.getElementById('add-btn');
+const taskList = document.getElementById('task-list');
 
-// Theme toggle logic
+// --- Theme toggle logic ---
 function setTheme(isDark) {
     if (isDark) {
         document.body.classList.add('dark-mode');
@@ -15,14 +16,12 @@ function setTheme(isDark) {
     }
 }
 
-// Check saved theme or system preference
 const savedTheme = localStorage.getItem('theme');
 if (savedTheme === 'dark') {
     setTheme(true);
 } else if (savedTheme === 'light') {
     setTheme(false);
 } else {
-    // Check system preference
     const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     setTheme(prefersDark);
 }
@@ -32,24 +31,74 @@ themeToggleBtn.addEventListener('click', () => {
     setTheme(isDark);
 });
 
-function generateNumbers() {
-    const numbers = [];
-    while (numbers.length < 6) {
-        const n = Math.floor(Math.random() * 45) + 1;
-        if (!numbers.includes(n)) {
-            numbers.push(n);
-        }
-    }
-    return numbers.sort((a, b) => a - b);
+// --- Study Planner logic ---
+let tasks = JSON.parse(localStorage.getItem('study_tasks')) || [];
+
+function saveTasks() {
+    localStorage.setItem('study_tasks', JSON.stringify(tasks));
 }
 
-btn.addEventListener('click', () => {
-    const luckyNumbers = generateNumbers();
-    display.innerHTML = '';
-    luckyNumbers.forEach(num => {
-        const ball = document.createElement('div');
-        ball.className = 'ball';
-        ball.textContent = num;
-        display.appendChild(ball);
+function renderTasks() {
+    taskList.innerHTML = '';
+    tasks.forEach((task, index) => {
+        const li = document.createElement('li');
+        li.className = `task-item ${task.completed ? 'completed' : ''}`;
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'task-content';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = task.completed;
+        checkbox.addEventListener('change', () => toggleTask(index));
+        
+        const span = document.createElement('span');
+        span.className = 'task-text';
+        span.textContent = task.text;
+        
+        contentDiv.appendChild(checkbox);
+        contentDiv.appendChild(span);
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = '삭제';
+        deleteBtn.addEventListener('click', () => deleteTask(index));
+        
+        li.appendChild(contentDiv);
+        li.appendChild(deleteBtn);
+        
+        taskList.appendChild(li);
     });
+}
+
+function addTask() {
+    const text = taskInput.value.trim();
+    if (text) {
+        tasks.push({ text: text, completed: false });
+        taskInput.value = '';
+        saveTasks();
+        renderTasks();
+    }
+}
+
+function toggleTask(index) {
+    tasks[index].completed = !tasks[index].completed;
+    saveTasks();
+    renderTasks();
+}
+
+function deleteTask(index) {
+    tasks.splice(index, 1);
+    saveTasks();
+    renderTasks();
+}
+
+addBtn.addEventListener('click', addTask);
+taskInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        addTask();
+    }
 });
+
+// Initial render
+renderTasks();

@@ -3,17 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>로또 번호 추천</title>
+    <title>스터디 플래너</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <button id="theme-toggle" class="theme-toggle">🌙 다크 모드</button>
-        <h1>로또 추천 번호</h1>
-        <div id="number-display" class="numbers">
-            <span class="placeholder">번호를 생성하세요</span>
+        <h1>오늘의 공부 계획</h1>
+        
+        <div class="input-group">
+            <input type="text" id="task-input" placeholder="새로운 공부 계획을 입력하세요" />
+            <button id="add-btn">추가</button>
         </div>
-        <button id="generate-btn">번호 생성하기</button>
+
+        <ul id="task-list" class="task-list">
+            <!-- Tasks will be added here -->
+        </ul>
 
         <hr style="margin: 2rem 0; border: 0; border-top: 1px solid #eee;">
 
